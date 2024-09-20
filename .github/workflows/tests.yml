@@ -1,0 +1,32 @@
+name: Tests
+
+on: ['push']
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.3
+          tools: composer:v2
+          coverage: xdebug
+
+      - name: Install Dependencies
+        run: |
+          composer install --no-interaction --prefer-dist --optimize-autoloader
+          touch ./database/database.sqlite
+          cp .env.example .env
+          cp .env.testing.example .env.testing
+          php artisan key:generate --env=testing
+          php artisan jwt:secret --env=testing --force
+        working-directory: ./src
+
+      - name: Tests
+        run: ./vendor/bin/pest --ci
+        working-directory: ./src
